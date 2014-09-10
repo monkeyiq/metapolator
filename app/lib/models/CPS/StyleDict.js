@@ -38,6 +38,13 @@ define([
             ? this._controller.parameterRegistry.getDefaultFactory(name)
             : cpsValue.factory
             ;
+	if( factory == this._controller.parameterRegistry.getDefaultFactory(name)) {
+            if(name[0]!=='_') {
+		var value = this._element[name];
+		console.log('value:' + value );
+//		return value;
+	    }
+	}
         return factory(name, this._element, this.CPSValueAPI);
     }
     
@@ -79,12 +86,35 @@ define([
      */
     _p.getCPSValue = function(name) {
         var value;
-        if(this._controller.parameterRegistry.exists(name))
+        if(this._controller.parameterRegistry.exists(name)) {
+	    console.log('...default');
+
+            // highly experimental!
+            if(name[0]!=='_') {
+		// now we can get for example parent via this api
+		// but how can we get a value from it???
+		// actually we can get anything from element ... 
+		// when it shows that this is too much power, we might have
+		// to define what's allowed here.
+		value = this._element[name];
+		if(!(typeof value in {'undefined': null, 'function': null})) {
+                    if(this._element.isMOMNode(value))
+			// when a value receives a function, it should call
+			// it with the next token
+			// if there is no next token, that value is invalid ...
+			return this._controller._getComputedStyle(value).CPSValueAPI
+                    // might be a legitimate value or crap like a cosntructor, etc
+                    return value;
+		}
+            }
+
+	    console.log('xxxxx');
             // the name is a registered parameter, so it always has at
             // least a default value
             return this.get(name);
+	}        
         
-        
+	console.log('getCPSV...' + name[0]);
         // highly experimental!
         if(name[0]!=='_') {
             // now we can get for example parent via this api
@@ -141,6 +171,7 @@ define([
             if(!value.invalid)
                 return value;
         }
+	console.log('...nothing ' + this._element.xx );
         return null;
     }
     

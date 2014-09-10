@@ -10,6 +10,7 @@ define([
   , 'metapolator/models/MOM/PenStroke'
   , 'metapolator/models/MOM/PenStrokePoint'
   , 'metapolator/models/CPS/Registry'
+  , 'metapolator/math/Vector'
 ], function (
     errors
   , ArgumentParser
@@ -22,6 +23,7 @@ define([
   , PenStroke
   , PenStrokePoint
   , Registry
+  , Vector
 ) {
     "use strict";
     var CommandLineError = errors.CommandLine
@@ -90,6 +92,14 @@ define([
                     type: 'vector'
                   , description: 'the intrinsic value of the zon'
         })
+        parameterRegistry.register('label', {
+                    type: 'string'
+                  , description: 'something new'
+        })
+        parameterRegistry.register('xx', {
+                    type: 'real'
+                  , description: 'and a number for mathses my precious'
+        });
         
         var result = parseRules.fromString(cpsString, args.CPSFile, parameterRegistry)
           , controller = new Controller(parameterRegistry)
@@ -135,27 +145,53 @@ define([
             ]
             
         }
-        
+
+        var fooCounter = 0;
+	var labelCounter = 0;
         for(var h=0; h<mastersOfTheUnivers.length; h++) {
             var glyphs = data[mastersOfTheUnivers[h].id].glyphs;
             for(var i=0;i<glyphs.length;i++) {
                 var glyph = new Glyph();
                 glyph.id = glyphs[i][0];
+		fooCounter++;
+		glyph.foo = 'bar' + fooCounter;
                 mastersOfTheUnivers[h].add(glyph);
                 for(var j=0;j<glyphs[i][1].length;j++) {
                     var stroke = new PenStroke();
                     glyph.add(stroke);
                     for(var k=0;k<glyphs[i][1][j].length;k++) {
-                        var point = new PenStrokePoint();
+                        var point = new PenStrokePoint( { on: Vector(1,2) } );
+			point.label = 'baz' + labelCounter++;
+			point.xx = 3;
                         stroke.add(point);
+			console.log('point: ' + point.center );
                     }
                 }
             }
         }
+
+	console.log('m.l: ' + mastersOfTheUnivers.length );
+	console.log('m0: ' + mastersOfTheUnivers[0] );
+	console.log('m1: ' + mastersOfTheUnivers[1] );
+	console.log('m0.gl: ' + mastersOfTheUnivers[0].children.length );
+        for(var j=0; j<mastersOfTheUnivers[0].children.length; j++) {
+	    var glyph = mastersOfTheUnivers[0].children[j];
+	    console.log('g: ' + glyph.id );
+	    console.log('g: ' + glyph.foo );
+
+	    console.log('g.l:' + glyph.children.length );
+	    glyph.children.forEach( function( stroke ) {
+		console.log('  stroke: ' + stroke );
+		stroke.children.forEach( function( point ) {
+		    console.log('     point.id: ' + point.id + ' label:' + point.label + ' ' + point  );
+		});
+	    });
+	}
     
         var element = controller.query('master#ralph glyph point:i(23)');
         
         console.log('element:', element.particulars);
+        console.log('element:', element.label);
         var computed = controller.getComputedStyle(element)
           , valueInstance = computed.get('width')
           ;
@@ -163,13 +199,30 @@ define([
         
         console.log('result ' + valueInstance.value, valueInstance._components.join('|'));
         
+
+// * { 
+//      label : 1234; 
+//      xx    : 5;
+// }
+
+// glyph#y penstroke:i(0) point:i(0) {
+//      xx    : 6;
+// }
+
         
         element = controller.query('master#heidi glyph#y penstroke:i(0) point:i(0)')
         console.log('element:', element.particulars);
+        console.log('element:', element.label);
+        console.log('element:', element.xx);
+//        console.log('element:', element);
         computed = controller.getComputedStyle(element)
         valueInstance = computed.get('zon')
+	console.log('label: ' + computed.get('label'));
+	console.log('xx.base   : ' + computed.getCPSValue('xx'));
+	console.log('xx.updated: ' + computed.getCPS('xx'));
+	console.log('xx.value  : ' + (computed.getCPS('xx') ? computed.getCPS('xx') : computed.getCPSValue('xx')));
         console.log('result ' + valueInstance.value, valueInstance._components.join('|'));
-        console.log(valueInstance = computed.get('value'));
+        console.log('computed ' + computed.get('value'));
         
         
         // console.log(''+result);
